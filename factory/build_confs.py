@@ -7,15 +7,17 @@ import time
 # confs names in template/ and ../
 # except sr_head and sr_foot
 confs_names = [
-    'sr_top500_banlist_ad',
-    'sr_top500_banlist',
-    'sr_top500_whitelist_ad',
-    'sr_top500_whitelist',
-    'sr_adb',
-    'sr_direct_banad',
-    'sr_proxy_banad',
-    'sr_cnip', 'sr_cnip_ad',
-    'sr_backcn', 'sr_backcn_ad',
+    # 'sr_top500_banlist_ad',
+    # 'sr_top500_banlist',
+    # 'sr_top500_whitelist_ad',
+    # 'sr_top500_whitelist',
+    # 'sr_adb',
+    # 'sr_direct_banad',
+    # 'sr_proxy_banad',
+    'sr_cnip', 
+    'sr_cnip_ad',
+    # 'sr_backcn', 
+    # 'sr_backcn_ad',
     'sr_ad_only'
 ]
 
@@ -50,6 +52,21 @@ def getRulesStringFromFile(path, kind):
     return ret
 
 
+def getRawRulesStringFromFile(path):
+    with open(path, 'r', encoding='utf-8') as file:
+        contents = file.readlines()
+
+    ret = ''
+    for content in contents:
+        content = content.strip('\r\n')
+        if not len(content):
+            continue
+
+        ret += content + '\n'
+
+    return ret
+
+
 # get head and foot
 str_head = open('template/sr_head.txt', 'r', encoding='utf-8').read()
 str_foot = open('template/sr_foot.txt', 'r', encoding='utf-8').read()
@@ -68,6 +85,7 @@ values['ad'] = getRulesStringFromFile('resultant/ad.list', 'Reject')
 values['manual_direct'] = getRulesStringFromFile('manual_direct.txt', 'Direct')
 values['manual_proxy']  = getRulesStringFromFile('manual_proxy.txt', 'Proxy')
 values['manual_reject'] = getRulesStringFromFile('manual_reject.txt', 'Reject')
+values['custom_rules']  = getRawRulesStringFromFile('custom_rules.conf')
 
 values['gfwlist'] = getRulesStringFromFile('resultant/gfw.list', 'Proxy') \
                   + getRulesStringFromFile('manual_gfwlist.txt', 'Proxy')
@@ -75,17 +93,14 @@ values['gfwlist'] = getRulesStringFromFile('resultant/gfw.list', 'Proxy') \
 
 # make confs
 for conf_name in confs_names:
-    file_template = open('template/'+conf_name+'.txt', 'r', encoding='utf-8')
-    template = file_template.read()
+    with open('template/'+conf_name+'.txt', 'r', encoding='utf-8') as file_template:
+        template = file_template.read()
   
     if conf_name != 'sr_ad_only':
         template = str_head + template + str_foot
 
-    file_output = open('../'+conf_name+'.conf', 'w', encoding='utf-8')
+    for mark, value in values.items():
+        template = template.replace('{{'+mark+'}}', value)
 
-    marks = re.findall(r'{{(.+)}}', template)
-
-    for mark in marks:
-        template = template.replace('{{'+mark+'}}', values[mark])
-
-    file_output.write(template)
+    with open('../'+conf_name+'.conf', 'w', encoding='utf-8') as file_output:
+        file_output.write(template)
